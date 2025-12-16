@@ -82,10 +82,10 @@ with left:
 
     mode = st.segmented_control(
     "Learning Mode",
-    ["Explain", "Summary", "MCQ", "Interview"],
-    index=0,
-    horizontal=True
+    options=["Explain", "Summary", "MCQ", "Interview"],
+    default="Explain"
     )
+
 
 
     context_text = st.text_area(
