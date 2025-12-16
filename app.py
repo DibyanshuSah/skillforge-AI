@@ -1,6 +1,4 @@
-import os
 import streamlit as st
-import requests
 
 from core.chunker import chunk_text
 from core.embeddings import create_or_load_vectorstore
@@ -14,94 +12,84 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- UI ----------------
+# ---------------- TITLE ----------------
 st.markdown(
     """
-    <h1>🔥 SkillForge AI</h1>
-    <p>GenAI + RAG Adaptive Learning System</p>
+    <h1 style="text-align:center;">🔥 SkillForge AI</h1>
+    <p style="text-align:center;">
+    GenAI + RAG Adaptive Learning System
+    </p>
     """,
     unsafe_allow_html=True
 )
 
-st.info(
-    "⚠️ PDF upload disabled on HF Free tier due to proxy limits. "
-    "Use **PDF URL** or **Paste Text** (production-safe approach)."
-)
+st.markdown("---")
 
-# ---------------- INPUT MODE ----------------
-mode_input = st.radio(
-    "Choose input method",
-    ["Paste Text", "PDF URL"]
-)
+# ---------------- LEFT RIGHT LAYOUT ----------------
+left_col, right_col = st.columns([1.2, 1])
 
-raw_text = ""
+# ---------------- LEFT COLUMN (CONTENT INPUT) ----------------
+with left_col:
+    st.subheader("📄 Learning Content")
 
-if mode_input == "Paste Text":
     raw_text = st.text_area(
-        "Paste PDF text here",
-        height=300,
-        placeholder="Paste extracted PDF text here..."
+        "Paste your PDF / Notes text here",
+        height=420,
+        placeholder="Paste extracted PDF text or notes here..."
     )
 
-else:
-    pdf_url = st.text_input(
-        "Enter direct PDF URL (raw GitHub / Drive / HF Dataset)",
-        placeholder="https://example.com/file.pdf"
+    difficulty = st.radio(
+        "Difficulty Level",
+        ["Easy", "Medium", "Hard"],
+        horizontal=True,
+        index=1
     )
 
-    if st.button("Fetch PDF"):
-        if not pdf_url.strip():
-            st.error("Please enter a PDF URL")
-        else:
-            try:
-                resp = requests.get(pdf_url, timeout=20)
-                resp.raise_for_status()
+    mode = st.radio(
+        "Learning Mode",
+        ["Explain", "Summary", "MCQ", "Interview"],
+        horizontal=True
+    )
 
-                with open("temp.pdf", "wb") as f:
-                    f.write(resp.content)
+# ---------------- RIGHT COLUMN (QUESTION & OUTPUT) ----------------
+with right_col:
+    st.subheader("💬 Ask Question")
 
-                from core.pdf_loader import load_pdf
-                raw_text = load_pdf("temp.pdf")
-                st.success("PDF fetched & read successfully")
+    question = st.text_input(
+        "Your Question",
+        placeholder="e.g. Explain this topic from basics"
+    )
 
-            except Exception as e:
-                st.error(f"Failed to fetch PDF: {e}")
+    generate = st.button("Generate Answer", type="primary")
 
-# ---------------- SETTINGS ----------------
-difficulty = st.selectbox("Difficulty", ["Easy", "Medium", "Hard"], index=1)
-learn_mode = st.selectbox("Learning Mode", ["Explain", "Summary", "MCQ", "Interview"])
+    st.markdown("### 🤖 AI Response")
 
-question = st.text_input(
-    "Ask a question",
-    placeholder="e.g. Explain this topic from basics"
+    if generate:
+        if not raw_text.strip():
+            st.warning("Please paste some learning content on the left.")
+            st.stop()
+
+        if not question.strip():
+            st.warning("Please enter a question.")
+            st.stop()
+
+        with st.spinner("Processing content..."):
+            chunks = chunk_text(raw_text)
+            vectorstore = create_or_load_vectorstore(chunks)
+            context = get_relevant_chunks(vectorstore, question)
+
+        with st.spinner("Generating answer..."):
+            answer = generate_answer(
+                context=context,
+                user_query=question,
+                difficulty=difficulty,
+                mode=mode
+            )
+
+        st.write(answer)
+
+# ---------------- FOOTER ----------------
+st.markdown("---")
+st.caption(
+    "Built with ❤️ using Streamlit, FAISS, Transformers & Hugging Face"
 )
-
-# ---------------- GENERATE ----------------
-if st.button("Generate Answer"):
-    if not raw_text.strip():
-        st.error("No content provided")
-        st.stop()
-
-    if not question.strip():
-        st.error("Please enter a question")
-        st.stop()
-
-    with st.spinner("Chunking text..."):
-        chunks = chunk_text(raw_text)
-
-    with st.spinner("Creating vector store..."):
-        vectorstore = create_or_load_vectorstore(chunks)
-
-    with st.spinner("Retrieving relevant context..."):
-        context = get_relevant_chunks(vectorstore, question)
-
-    with st.spinner("Generating answer..."):
-        answer = generate_answer(
-            context=context,
-            user_query=question,
-            difficulty=difficulty,
-            mode=learn_mode
-        )
-
-    st.markdown("### ✅ Answer")
-    st.write(answer)
