@@ -1,4 +1,3 @@
-cat << 'EOF' > README.md
 # 🔥 SkillForge AI
 
 **SkillForge AI** is a **GenAI + RAG powered adaptive learning platform** that allows users to paste study material (PDF / notes) and ask intelligent questions with **difficulty control** and **learning modes**, powered by **local LLMs** and **vector search**.
