@@ -9,7 +9,4 @@ sentence-transformers
 
 huggingface-hub
 llama-cpp-python==0.2.90
-
-
-numpy
-torch
+langchain-text-splitters
