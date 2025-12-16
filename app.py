@@ -12,96 +12,98 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- SESSION STATE ----------------
-if "difficulty" not in st.session_state:
-    st.session_state.difficulty = "Medium"
-
-if "mode" not in st.session_state:
-    st.session_state.mode = "Explain"
-
 # ---------------- CUSTOM CSS ----------------
 st.markdown("""
 <style>
-.block-btn button {
-    border-radius: 10px;
-    padding: 10px 18px;
-    margin-right: 10px;
-    margin-bottom: 10px;
+
+/* Remove extra top padding */
+.block-container {
+    padding-top: 1.5rem;
+}
+
+/* Center main title */
+.main-title {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 5px;
+}
+
+.sub-title {
+    text-align: center;
+    color: #9ca3af;
+    margin-bottom: 25px;
+}
+
+/* Radio buttons as boxes */
+div[role="radiogroup"] > label {
     border: 1px solid #333;
-    background-color: #111;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-right: 10px;
+    background-color: #0b0f19;
+    cursor: pointer;
+}
+
+/* Selected = RED */
+div[role="radiogroup"] > label[data-checked="true"] {
+    background-color: #ef4444;
     color: white;
+    border-color: #ef4444;
 }
-.block-btn button:hover {
-    border-color: #f97316;
-    color: #f97316;
+
+/* Reduce gap between sections */
+h3 {
+    margin-top: 10px;
+    margin-bottom: 6px;
 }
-.selected-btn {
-    background-color: #f97316 !important;
-    color: black !important;
-}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- UI LAYOUT ----------------
-left, right = st.columns([1.2, 1])
+# ---------------- HEADER ----------------
+st.markdown('<div class="main-title">🔥 SkillForge AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">GenAI + RAG Adaptive Learning System</div>', unsafe_allow_html=True)
 
-# ================= LEFT SIDE =================
+# ---------------- LAYOUT ----------------
+left, right = st.columns([1.25, 1])
+
+# ================= LEFT =================
 with left:
-    st.markdown("## 📘 Learning Content")
+    st.markdown("### 📘 Learning Content")
 
-    # -------- Difficulty Level --------
-    st.markdown("### Difficulty Level")
-    c1, c2, c3 = st.columns(3)
+    difficulty = st.radio(
+        "Difficulty Level",
+        ["Easy", "Medium", "Hard"],
+        horizontal=True,
+        index=1
+    )
 
-    with c1:
-        if st.button("Easy", key="easy"):
-            st.session_state.difficulty = "Easy"
-    with c2:
-        if st.button("Medium", key="medium"):
-            st.session_state.difficulty = "Medium"
-    with c3:
-        if st.button("Hard", key="hard"):
-            st.session_state.difficulty = "Hard"
+    mode = st.radio(
+        "Learning Mode",
+        ["Explain", "Summary", "MCQ", "Interview"],
+        horizontal=True,
+        index=0
+    )
 
-    # -------- Learning Mode --------
-    st.markdown("### Learning Mode")
-    m1, m2, m3, m4 = st.columns(4)
-
-    with m1:
-        if st.button("Explain"):
-            st.session_state.mode = "Explain"
-    with m2:
-        if st.button("Summary"):
-            st.session_state.mode = "Summary"
-    with m3:
-        if st.button("MCQ"):
-            st.session_state.mode = "MCQ"
-    with m4:
-        if st.button("Interview"):
-            st.session_state.mode = "Interview"
-
-    # -------- Context Text --------
-    st.markdown("### Paste your PDF / Notes text")
     context_text = st.text_area(
-        label="",
-        height=320,
+        "Paste your PDF / Notes text",
+        height=260,
         placeholder="Paste your study material here..."
     )
 
-# ================= RIGHT SIDE =================
+# ================= RIGHT =================
 with right:
-    st.markdown("## 💬 Ask Question")
+    st.markdown("### 💬 Ask Question")
 
     user_query = st.text_input(
         "Your Question",
         placeholder="e.g. Explain this topic from basics"
     )
 
-    generate = st.button("🚀 Generate Answer")
-
-    if generate:
+    if st.button("🚀 Generate Answer", use_container_width=True):
         if not context_text.strip():
-            st.error("Please paste some learning content first.")
+            st.error("Please paste learning content.")
         elif not user_query.strip():
             st.error("Please enter a question.")
         else:
@@ -116,15 +118,13 @@ with right:
                 answer = generate_answer(
                     relevant_context,
                     user_query,
-                    st.session_state.difficulty,
-                    st.session_state.mode
+                    difficulty,
+                    mode
                 )
 
-            st.markdown("## 🤖 AI Response")
+            st.markdown("### 🤖 AI Response")
             st.write(answer)
 
 # ---------------- FOOTER ----------------
 st.markdown("---")
-st.caption(
-    "Built with ❤️ using Streamlit, FAISS and Local Phi-3 (GGUF)"
-)
+st.caption("Built with ❤️ using Streamlit, FAISS and Local Phi-3 (GGUF)")
