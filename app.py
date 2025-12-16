@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CONSTANTS ----------------
+# ---------------- PATHS (HF SAFE) ----------------
 BASE_DIR = os.getcwd()
 DATA_DIR = os.path.join(BASE_DIR, "data")
 UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
@@ -33,17 +33,17 @@ uploaded_file = st.sidebar.file_uploader(
 )
 
 difficulty = st.sidebar.radio(
-    "Difficulty level",
+    "Difficulty",
     ["Easy", "Medium", "Hard"],
     index=1
 )
 
 mode = st.sidebar.radio(
-    "Learning Mode",
+    "Mode",
     ["Explain", "Summary", "MCQ", "Interview"]
 )
 
-# ---------------- PDF SAVE (🔥 FIXED PART) ----------------
+# ---------------- SAVE PDF (🔥 SINGLE RESPONSIBILITY) ----------------
 if uploaded_file is not None:
     try:
         with open(PDF_PATH, "wb") as f:
@@ -52,7 +52,7 @@ if uploaded_file is not None:
         st.sidebar.success("PDF uploaded successfully")
 
     except Exception as e:
-        st.sidebar.error(f"PDF save failed: {e}")
+        st.sidebar.error(f"Upload failed: {e}")
         st.stop()
 
 # ---------------- MAIN UI ----------------
@@ -64,10 +64,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown("### 💬 Ask from your document")
-
 query = st.text_input(
-    "Enter your question",
+    "Ask a question from your document",
     placeholder="e.g. Explain this topic from basics"
 )
 
@@ -85,13 +83,13 @@ if st.button("Generate Answer"):
     with st.spinner("Reading PDF..."):
         text = load_pdf(PDF_PATH)
 
-    with st.spinner("Chunking document..."):
+    with st.spinner("Chunking text..."):
         chunks = chunk_text(text)
 
     with st.spinner("Creating / loading vector store..."):
         vectorstore = create_or_load_vectorstore(chunks)
 
-    with st.spinner("Retrieving relevant context..."):
+    with st.spinner("Retrieving relevant content..."):
         context = get_relevant_chunks(vectorstore, query)
 
     with st.spinner("Generating answer..."):
