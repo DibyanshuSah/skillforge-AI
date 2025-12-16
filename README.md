@@ -39,45 +39,6 @@ https://huggingface.co/spaces/rishusah/skillforge-ai
 - Language: Python
 
 ---
-
-## ⚙️ Local Setup
-
-Clone repository:
-git clone https://github.com/DibyanshuSah/skillforge-AI.git
-cd skillforge-AI
-
-Create virtual environment:
-python -m venv venv
-source venv/bin/activate
-# Windows: venv\\Scripts\\activate
-
-Install dependencies:
-pip install -r requirements.txt
-
-Add local model:
-models/phi3.gguf
-
-Run app:
-streamlit run app.py
-
----
-
-## 📌 Notes
-
-- Designed for offline usage with local LLMs
-- No paid API keys required
-- Same codebase runs locally and on Hugging Face
-- Resume and interview ready GenAI project
-
----
-
-## 👤 Author
-
-Dibyanshu Sah  
-GitHub: https://github.com/DibyanshuSah  
-Hugging Face: https://huggingface.co/rishusah  
-
----
 ## ⚙️ Local Setup
 
 ### 🚀 Clone Repository
@@ -122,6 +83,15 @@ models/phi3.gguf
 ```bash
 streamlit run app.py
 ```
+---
+
+## 👤 Author
+
+Dibyanshu Sah  
+GitHub: https://github.com/DibyanshuSah  
+Hugging Face: https://huggingface.co/rishusah  
+
+---
 
 ## ⭐ Support
 If you find this project useful, consider giving it a ⭐ on GitHub.
