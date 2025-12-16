@@ -73,18 +73,20 @@ with left:
     st.markdown("### 📘 Learning Content")
 
     difficulty = st.radio(
-        "Difficulty Level",
-        ["Easy", "Medium", "Hard"],
-        horizontal=True,
-        index=1
-    )
+    "Difficulty Level",
+    ["Easy", "Medium", "Hard"],
+    index=1,
+    horizontal=True
+)
+
 
     mode = st.radio(
-        "Learning Mode",
-        ["Explain", "Summary", "MCQ", "Interview"],
-        horizontal=True,
-        index=0
-    )
+    "Learning Mode",
+    ["Explain", "Summary", "MCQ", "Interview"],
+    index=0,
+    horizontal=True
+)
+
 
     context_text = st.text_area(
         "Paste your PDF / Notes text",
