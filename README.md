@@ -54,27 +54,6 @@ https://huggingface.co/spaces/rishusah/skillforge-ai
 
 ---
 
-## 📁 Project Structure
-
-skillforge-ai/
-├── app.py
-├── core/
-│   ├── pdf_loader.py
-│   ├── chunker.py
-│   ├── embeddings.py
-│   ├── retriever.py
-│   └── generator.py
-├── data/
-│   ├── uploads/
-│   └── vectorstore/
-├── models/
-│   └── phi3.gguf
-├── Dockerfile
-├── requirements.txt
-└── README.md
-
----
-
 ## ⚙️ Local Setup
 
 Clone repository:
