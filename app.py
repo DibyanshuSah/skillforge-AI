@@ -2,14 +2,22 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
+# ---------------- LOAD ENV ----------------
+load_dotenv()
+
+# ---------------- PATHS ----------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+PDF_PATH = os.path.join(DATA_DIR, "uploaded.pdf")
+
+# ---------------- CORE IMPORTS ----------------
 from core.pdf_loader import load_pdf
 from core.chunker import chunk_text
 from core.embeddings import create_or_load_vectorstore
 from core.retriever import get_relevant_chunks
 from core.generator import generate_answer
-
-# ---------------- ENV ----------------
-load_dotenv()
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -18,81 +26,78 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- PATHS (HF SAFE) ----------------
-DATA_DIR = "/data"
-os.makedirs(DATA_DIR, exist_ok=True)
+# ---------------- UI ----------------
+st.markdown("<h1>🔥 SkillForge AI</h1>", unsafe_allow_html=True)
+st.caption("GenAI + RAG Adaptive Learning System")
 
 # ---------------- SIDEBAR ----------------
-with st.sidebar:
-    st.markdown("### 📄 Upload your study PDF")
+st.sidebar.header("📄 Upload your study PDF")
 
-    uploaded_file = st.file_uploader(
-        "Drag and drop file here",
-        type=["pdf"]
-    )
-
-    st.markdown("### 🎯 Difficulty level")
-    difficulty = st.radio(
-        "",
-        ["Easy", "Medium", "Hard"],
-        horizontal=True,
-        index=1
-    )
-
-    st.markdown("### 🧠 Learning Mode")
-    mode = st.radio(
-        "",
-        ["Explain", "Summary", "MCQ", "Interview"],
-        horizontal=True
-    )
-
-# ---------------- MAIN UI ----------------
-st.markdown(
-    """
-    <h1 style='color:#f97316;'>🔥 SkillForge AI</h1>
-    <p>GenAI + RAG Adaptive Learning System</p>
-    """,
-    unsafe_allow_html=True
+uploaded_file = st.sidebar.file_uploader(
+    "Upload PDF",
+    type=["pdf"],
+    accept_multiple_files=False
 )
 
-query = st.text_input(
-    "Ask from your document",
+difficulty = st.sidebar.radio(
+    "Difficulty level",
+    ["Easy", "Medium", "Hard"],
+    index=1
+)
+
+mode = st.sidebar.radio(
+    "Learning Mode",
+    ["Explain", "Summary", "MCQ", "Interview"],
+    index=0
+)
+
+# ---------------- PDF UPLOAD (CRITICAL FIX) ----------------
+if uploaded_file is not None:
+    try:
+        # 🔥 THIS FIXES 403 ERROR
+        with open(PDF_PATH, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        st.sidebar.success("PDF uploaded successfully")
+
+        with st.spinner("Reading PDF..."):
+            raw_text = load_pdf(PDF_PATH)
+
+        with st.spinner("Chunking text..."):
+            chunks = chunk_text(raw_text)
+
+        with st.spinner("Creating vector store..."):
+            vectorstore = create_or_load_vectorstore(chunks)
+
+        st.session_state["vectorstore"] = vectorstore
+        st.session_state["pdf_loaded"] = True
+
+    except Exception as e:
+        st.sidebar.error(f"PDF processing failed: {e}")
+
+# ---------------- MAIN QA ----------------
+st.subheader("💬 Ask from your document")
+
+question = st.text_input(
+    "Enter your question",
     placeholder="e.g. Explain this topic from basics"
 )
 
-# ---------------- PDF PROCESSING ----------------
-pdf_path = None
-vectorstore = None
-
-if uploaded_file:
-    pdf_path = os.path.join(DATA_DIR, uploaded_file.name)
-
-    with open(pdf_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    st.success(f"PDF uploaded successfully")
-
-    with st.spinner("📚 Reading PDF..."):
-        text = load_pdf(pdf_path)
-
-    with st.spinner("✂️ Chunking content..."):
-        chunks = chunk_text(text)
-
-    with st.spinner("🧠 Creating embeddings..."):
-        vectorstore = create_or_load_vectorstore(chunks)
-
-# ---------------- GENERATE ANSWER ----------------
-if st.button("Generate Answer", type="primary"):
-    if not uploaded_file:
-        st.warning("Please upload a PDF first")
-    elif not query.strip():
-        st.warning("Please enter a question")
+if st.button("Generate Answer"):
+    if not st.session_state.get("pdf_loaded"):
+        st.warning("Please upload a PDF first.")
+    elif not question.strip():
+        st.warning("Please enter a question.")
     else:
-        with st.spinner("🤖 Thinking..."):
-            relevant_chunks = get_relevant_chunks(vectorstore, query)
+        with st.spinner("Thinking..."):
+            relevant_chunks = get_relevant_chunks(
+                st.session_state["vectorstore"],
+                question
+            )
+
             answer = generate_answer(
                 context=relevant_chunks,
-                user_query=query,
+                user_query=question,
                 difficulty=difficulty,
                 mode=mode
             )
@@ -101,10 +106,7 @@ if st.button("Generate Answer", type="primary"):
         st.write(answer)
 
 # ---------------- FOOTER ----------------
-st.markdown(
-    """
-    <hr>
-    <small>Built with ❤️ using LangChain, FAISS, Streamlit & Hugging Face</small>
-    """,
-    unsafe_allow_html=True
+st.markdown("---")
+st.caption(
+    "Built with ❤️ using Streamlit, LangChain, FAISS, and Local/Cloud LLMs"
 )
