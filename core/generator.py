@@ -1,53 +1,28 @@
-import os
-from llama_cpp import Llama
-from huggingface_hub import hf_hub_download
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 
-# ---------------- MODEL CONFIG ----------------
-REPO_ID = "lmstudio-community/TinyLlama-1.1B-Chat-GGUF"
-MODEL_FILE = "tinyllama-1.1b-chat.Q4_K_M.gguf"
+MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
-MODELS_DIR = "models"
-os.makedirs(MODELS_DIR, exist_ok=True)
-
-# ---------------- DOWNLOAD MODEL AT RUNTIME ----------------
-model_path = hf_hub_download(
-    repo_id=REPO_ID,
-    filename=MODEL_FILE,
-    local_dir=MODELS_DIR,
-    local_dir_use_symlinks=False
+tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_ID,
+    torch_dtype=torch.float32,
+    device_map="auto"
 )
 
-# ---------------- LOAD LLM ----------------
-llm = Llama(
-    model_path=model_path,
-    n_ctx=2048,
-    n_threads=4,
-    n_batch=256,
-    verbose=False
-)
-
-# ---------------- PROMPT LOADER ----------------
 def load_prompt(difficulty: str):
-    prompt_map = {
-        "Easy": "prompts/easy.txt",
-        "Medium": "prompts/medium.txt",
-        "Hard": "prompts/hard.txt",
-    }
-
-    path = prompt_map.get(difficulty, "prompts/medium.txt")
-
-    if os.path.exists(path):
+    path = f"prompts/{difficulty.lower()}.txt"
+    try:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
+    except:
+        return "You are a helpful AI tutor."
 
-    return "You are a helpful AI tutor."
-
-# ---------------- MAIN GENERATION ----------------
 def generate_answer(context: str, user_query: str, difficulty: str, mode: str):
 
     system_prompt = load_prompt(difficulty)
 
-    final_prompt = f"""
+    prompt = f"""
 {system_prompt}
 
 Mode: {mode}
@@ -61,12 +36,12 @@ Question:
 Answer:
 """
 
-    response = llm(
-        final_prompt,
-        max_tokens=512,
+    inputs = tokenizer(prompt, return_tensors="pt")
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=300,
         temperature=0.7,
-        top_p=0.9,
-        stop=["</s>"]
+        do_sample=True
     )
 
-    return response["choices"][0]["text"].strip()
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
