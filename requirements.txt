@@ -7,8 +7,9 @@ pdfplumber
 faiss-cpu
 sentence-transformers
 
+torch
+transformers
 huggingface-hub
-llama-cpp-python==0.2.90
-langchain-text-splitters
 
+langchain-text-splitters
 langchain-community
