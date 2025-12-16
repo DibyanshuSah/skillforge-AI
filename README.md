@@ -92,6 +92,50 @@ GitHub: https://github.com/DibyanshuSah
 Hugging Face: https://huggingface.co/rishusah  
 
 ---
+## ⚙️ Local Setup
+
+### 🚀 Clone Repository
+```bash
+git clone https://github.com/DibyanshuSah/skillforge-AI.git
+cd skillforge-AI
+```
+
+---
+
+### 🧪 Create Virtual Environment
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+**Windows users:**
+```bash
+venv\Scripts\activate
+```
+
+---
+
+### 📦 Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 🧠 Add Local LLM Model
+```text
+models/phi3.gguf
+```
+
+> Place your GGUF model file inside the `models/` directory.  
+> Model files are **not included** in the repository.
+
+---
+
+### ▶️ Run the Application
+```bash
+streamlit run app.py
+```
 
 ## ⭐ Support
 If you find this project useful, consider giving it a ⭐ on GitHub.
