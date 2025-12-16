@@ -3,8 +3,8 @@ from llama_cpp import Llama
 from huggingface_hub import hf_hub_download
 
 # ---------------- MODEL CONFIG ----------------
-REPO_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-MODEL_FILE = "TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf"
+REPO_ID = "lmstudio-community/TinyLlama-1.1B-Chat-GGUF"
+MODEL_FILE = "tinyllama-1.1b-chat.Q4_K_M.gguf"
 
 MODELS_DIR = "models"
 os.makedirs(MODELS_DIR, exist_ok=True)
@@ -31,7 +31,7 @@ def load_prompt(difficulty: str):
     prompt_map = {
         "Easy": "prompts/easy.txt",
         "Medium": "prompts/medium.txt",
-        "Hard": "prompts/hard.txt"
+        "Hard": "prompts/hard.txt",
     }
 
     path = prompt_map.get(difficulty, "prompts/medium.txt")
@@ -42,7 +42,7 @@ def load_prompt(difficulty: str):
 
     return "You are a helpful AI tutor."
 
-# ---------------- MAIN GENERATION FUNCTION ----------------
+# ---------------- MAIN GENERATION ----------------
 def generate_answer(context: str, user_query: str, difficulty: str, mode: str):
 
     system_prompt = load_prompt(difficulty)
