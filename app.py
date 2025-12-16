@@ -72,20 +72,20 @@ left, right = st.columns([1.25, 1])
 with left:
     st.markdown("### 📘 Learning Content")
 
-    difficulty = st.radio(
+    difficulty = st.segmented_control(
     "Difficulty Level",
-    ["Easy", "Medium", "Hard"],
-    index=1,
-    horizontal=True
-)
+    options=["Easy", "Medium", "Hard"],
+    default="Medium"
+    )
 
 
-    mode = st.radio(
+
+    mode = st.segmented_control(
     "Learning Mode",
     ["Explain", "Summary", "MCQ", "Interview"],
     index=0,
     horizontal=True
-)
+    )
 
 
     context_text = st.text_area(
