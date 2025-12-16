@@ -1,14 +1,15 @@
 import os
-from dotenv import load_dotenv
-load_dotenv()
-
 import streamlit as st
+from dotenv import load_dotenv
 
 from core.pdf_loader import load_pdf
 from core.chunker import chunk_text
 from core.embeddings import create_or_load_vectorstore
 from core.retriever import get_relevant_chunks
 from core.generator import generate_answer
+
+# ---------------- ENV ----------------
+load_dotenv()
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -17,140 +18,93 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CUSTOM CSS ----------------
-st.markdown(
-    """
-    <style>
-    /* Sidebar width & background */
-    section[data-testid="stSidebar"] {
-        width: 390px !important;
-    }
+# ---------------- PATHS (HF SAFE) ----------------
+DATA_DIR = "/data"
+os.makedirs(DATA_DIR, exist_ok=True)
 
-    section[data-testid="stSidebar"] > div {
-        background: linear-gradient(180deg, #0f172a, #020617);
-        color: white;
-    }
+# ---------------- SIDEBAR ----------------
+with st.sidebar:
+    st.markdown("### 📄 Upload your study PDF")
 
-    /* Primary button */
-    button[kind="primary"] {
-        background-color: #f97316 !important;
-        color: white !important;
-        border-radius: 10px;
-        font-weight: 600;
-    }
+    uploaded_file = st.file_uploader(
+        "Drag and drop file here",
+        type=["pdf"]
+    )
 
-    /* ✅ ONLY uploader BOX (not text) */
-    div[data-testid="stFileUploader"] > section {
-        border: 2px solid #f97316;
-        border-radius: 16px;
-        padding: 12px;
-    }
+    st.markdown("### 🎯 Difficulty level")
+    difficulty = st.radio(
+        "",
+        ["Easy", "Medium", "Hard"],
+        horizontal=True,
+        index=1
+    )
 
-    /* Reduce sidebar gaps */
-    section[data-testid="stSidebar"] h3 {
-        margin-top: 6px !important;
-        margin-bottom: 4px !important;
-    }
-
-    section[data-testid="stSidebar"] div[data-testid="stSegmentedControl"] {
-        margin-top: 0px !important;
-        margin-bottom: 6px !important;
-    }
-
-    section[data-testid="stSidebar"] > div > div > div {
-        gap: 6px !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# ---------------- MAIN TITLE ----------------
-st.markdown(
-    """
-    <h1 style="color:#f97316; margin-bottom:4px;">🔥 SkillForge AI</h1>
-    <p style="color:gray; margin-top:0;">GenAI + RAG Adaptive Learning System</p>
-    """,
-    unsafe_allow_html=True
-)
-
-# ---------------- SESSION STATE ----------------
-if "vectorstore" not in st.session_state:
-    st.session_state.vectorstore = None
-
-# ======================================================
-# 📄 SIDEBAR – PDF UPLOAD (TEXT OUTSIDE ORANGE BOX ✅)
-# ======================================================
-st.sidebar.markdown("### 📄 Upload your study PDF")
-
-uploaded_file = st.sidebar.file_uploader(
-    label="",
-    type=["pdf"],
-    label_visibility="collapsed"
-)
-
-# ---------------- PDF PROCESS ----------------
-if uploaded_file and st.session_state.vectorstore is None:
-    with st.sidebar.status("Processing document...", expanded=False):
-        try:
-            text = load_pdf(uploaded_file)
-            chunks = chunk_text(text)
-            st.session_state.vectorstore = create_or_load_vectorstore(chunks)
-            st.sidebar.success("📘 Document loaded")
-        except Exception as e:
-            st.sidebar.error(f"❌ {e}")
-
-elif st.session_state.vectorstore:
-    st.sidebar.success("📘 Document loaded")
-
-# ---------------- CONTROLS ----------------
-difficulty = st.sidebar.segmented_control(
-    "Difficulty level",
-    options=["Easy", "Medium", "Hard"],
-    default="Medium"
-).lower()
-
-mode = st.sidebar.segmented_control(
-    "Learning Mode",
-    options=["Explain", "Summary", "MCQ", "Interview"],
-    default="Explain"
-).lower()
-
-with st.sidebar.expander("⚙️ Advanced options"):
-    st.checkbox("Strictly use document content", value=True, disabled=True)
-    st.checkbox("Show answer sources", value=True, disabled=True)
+    st.markdown("### 🧠 Learning Mode")
+    mode = st.radio(
+        "",
+        ["Explain", "Summary", "MCQ", "Interview"],
+        horizontal=True
+    )
 
 # ---------------- MAIN UI ----------------
-st.markdown("## 💬 Ask from your document")
+st.markdown(
+    """
+    <h1 style='color:#f97316;'>🔥 SkillForge AI</h1>
+    <p>GenAI + RAG Adaptive Learning System</p>
+    """,
+    unsafe_allow_html=True
+)
 
-user_query = st.text_input(
-    "Enter your question",
+query = st.text_input(
+    "Ask from your document",
     placeholder="e.g. Explain this topic from basics"
 )
 
-can_generate = st.session_state.vectorstore is not None and user_query.strip()
+# ---------------- PDF PROCESSING ----------------
+pdf_path = None
+vectorstore = None
 
-if st.button("Generate Answer", type="primary", disabled=not can_generate):
-    with st.spinner("🤖 Generating answer..."):
-        try:
-            context = get_relevant_chunks(
-                st.session_state.vectorstore,
-                user_query
-            )
+if uploaded_file:
+    pdf_path = os.path.join(DATA_DIR, uploaded_file.name)
 
+    with open(pdf_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+
+    st.success(f"PDF uploaded successfully")
+
+    with st.spinner("📚 Reading PDF..."):
+        text = load_pdf(pdf_path)
+
+    with st.spinner("✂️ Chunking content..."):
+        chunks = chunk_text(text)
+
+    with st.spinner("🧠 Creating embeddings..."):
+        vectorstore = create_or_load_vectorstore(chunks)
+
+# ---------------- GENERATE ANSWER ----------------
+if st.button("Generate Answer", type="primary"):
+    if not uploaded_file:
+        st.warning("Please upload a PDF first")
+    elif not query.strip():
+        st.warning("Please enter a question")
+    else:
+        with st.spinner("🤖 Thinking..."):
+            relevant_chunks = get_relevant_chunks(vectorstore, query)
             answer = generate_answer(
-                context=context,
-                user_query=user_query,
+                context=relevant_chunks,
+                user_query=query,
                 difficulty=difficulty,
                 mode=mode
             )
 
-            st.markdown("### 🧠 Answer")
-            st.write(answer)
-
-        except Exception as e:
-            st.error(f"❌ {e}")
+        st.markdown("### ✅ Answer")
+        st.write(answer)
 
 # ---------------- FOOTER ----------------
-st.markdown("---")
-st.caption("Built with ❤️ using LangChain, FAISS, Streamlit, and Local/Cloud LLMs")
+st.markdown(
+    """
+    <hr>
+    <small>Built with ❤️ using LangChain, FAISS, Streamlit & Hugging Face</small>
+    """,
+    unsafe_allow_html=True
+)
