@@ -14,11 +14,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- PATHS (HF SAFE) ----------------
+# ---------------- PATHS ----------------
 BASE_DIR = os.getcwd()
 DATA_DIR = os.path.join(BASE_DIR, "data")
 UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
-
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 PDF_PATH = os.path.join(UPLOAD_DIR, "uploaded.pdf")
@@ -26,11 +25,25 @@ PDF_PATH = os.path.join(UPLOAD_DIR, "uploaded.pdf")
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("📄 Upload your study PDF")
 
-uploaded_file = st.sidebar.file_uploader(
-    "Upload PDF",
-    type=["pdf"],
-    accept_multiple_files=False
-)
+with st.sidebar.form("pdf_upload_form", clear_on_submit=False):
+
+    uploaded_file = st.file_uploader(
+        "Upload PDF",
+        type=["pdf"],
+        accept_multiple_files=False
+    )
+
+    upload_btn = st.form_submit_button("Upload PDF")
+
+    if upload_btn and uploaded_file is not None:
+        try:
+            with open(PDF_PATH, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            st.session_state["pdf_uploaded"] = True
+            st.success("PDF uploaded successfully")
+        except Exception as e:
+            st.error(f"Upload failed: {e}")
+            st.stop()
 
 difficulty = st.sidebar.radio(
     "Difficulty",
@@ -42,18 +55,6 @@ mode = st.sidebar.radio(
     "Mode",
     ["Explain", "Summary", "MCQ", "Interview"]
 )
-
-# ---------------- SAVE PDF (🔥 SINGLE RESPONSIBILITY) ----------------
-if uploaded_file is not None:
-    try:
-        with open(PDF_PATH, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        st.sidebar.success("PDF uploaded successfully")
-
-    except Exception as e:
-        st.sidebar.error(f"Upload failed: {e}")
-        st.stop()
 
 # ---------------- MAIN UI ----------------
 st.markdown(
