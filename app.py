@@ -1,18 +1,6 @@
 import os
 import streamlit as st
-from dotenv import load_dotenv
 
-# ---------------- LOAD ENV ----------------
-load_dotenv()
-
-# ---------------- PATHS ----------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-
-PDF_PATH = os.path.join(DATA_DIR, "uploaded.pdf")
-
-# ---------------- CORE IMPORTS ----------------
 from core.pdf_loader import load_pdf
 from core.chunker import chunk_text
 from core.embeddings import create_or_load_vectorstore
@@ -26,12 +14,17 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- UI ----------------
-st.markdown("<h1>🔥 SkillForge AI</h1>", unsafe_allow_html=True)
-st.caption("GenAI + RAG Adaptive Learning System")
+# ---------------- CONSTANTS ----------------
+BASE_DIR = os.getcwd()
+DATA_DIR = os.path.join(BASE_DIR, "data")
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+PDF_PATH = os.path.join(UPLOAD_DIR, "uploaded.pdf")
 
 # ---------------- SIDEBAR ----------------
-st.sidebar.header("📄 Upload your study PDF")
+st.sidebar.title("📄 Upload your study PDF")
 
 uploaded_file = st.sidebar.file_uploader(
     "Upload PDF",
@@ -47,66 +40,67 @@ difficulty = st.sidebar.radio(
 
 mode = st.sidebar.radio(
     "Learning Mode",
-    ["Explain", "Summary", "MCQ", "Interview"],
-    index=0
+    ["Explain", "Summary", "MCQ", "Interview"]
 )
 
-# ---------------- PDF UPLOAD (CRITICAL FIX) ----------------
+# ---------------- PDF SAVE (🔥 FIXED PART) ----------------
 if uploaded_file is not None:
     try:
-        # 🔥 THIS FIXES 403 ERROR
         with open(PDF_PATH, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
         st.sidebar.success("PDF uploaded successfully")
 
-        with st.spinner("Reading PDF..."):
-            raw_text = load_pdf(PDF_PATH)
-
-        with st.spinner("Chunking text..."):
-            chunks = chunk_text(raw_text)
-
-        with st.spinner("Creating vector store..."):
-            vectorstore = create_or_load_vectorstore(chunks)
-
-        st.session_state["vectorstore"] = vectorstore
-        st.session_state["pdf_loaded"] = True
-
     except Exception as e:
-        st.sidebar.error(f"PDF processing failed: {e}")
+        st.sidebar.error(f"PDF save failed: {e}")
+        st.stop()
 
-# ---------------- MAIN QA ----------------
-st.subheader("💬 Ask from your document")
+# ---------------- MAIN UI ----------------
+st.markdown(
+    """
+    <h1>🔥 SkillForge AI</h1>
+    <p>GenAI + RAG Adaptive Learning System</p>
+    """,
+    unsafe_allow_html=True
+)
 
-question = st.text_input(
+st.markdown("### 💬 Ask from your document")
+
+query = st.text_input(
     "Enter your question",
     placeholder="e.g. Explain this topic from basics"
 )
 
+# ---------------- GENERATE ANSWER ----------------
 if st.button("Generate Answer"):
-    if not st.session_state.get("pdf_loaded"):
-        st.warning("Please upload a PDF first.")
-    elif not question.strip():
-        st.warning("Please enter a question.")
-    else:
-        with st.spinner("Thinking..."):
-            relevant_chunks = get_relevant_chunks(
-                st.session_state["vectorstore"],
-                question
-            )
 
-            answer = generate_answer(
-                context=relevant_chunks,
-                user_query=question,
-                difficulty=difficulty,
-                mode=mode
-            )
+    if not os.path.exists(PDF_PATH):
+        st.error("Please upload a PDF first.")
+        st.stop()
 
-        st.markdown("### ✅ Answer")
-        st.write(answer)
+    if not query.strip():
+        st.error("Please enter a question.")
+        st.stop()
 
-# ---------------- FOOTER ----------------
-st.markdown("---")
-st.caption(
-    "Built with ❤️ using Streamlit, LangChain, FAISS, and Local/Cloud LLMs"
-)
+    with st.spinner("Reading PDF..."):
+        text = load_pdf(PDF_PATH)
+
+    with st.spinner("Chunking document..."):
+        chunks = chunk_text(text)
+
+    with st.spinner("Creating / loading vector store..."):
+        vectorstore = create_or_load_vectorstore(chunks)
+
+    with st.spinner("Retrieving relevant context..."):
+        context = get_relevant_chunks(vectorstore, query)
+
+    with st.spinner("Generating answer..."):
+        answer = generate_answer(
+            context=context,
+            user_query=query,
+            difficulty=difficulty,
+            mode=mode
+        )
+
+    st.markdown("### ✅ Answer")
+    st.write(answer)
