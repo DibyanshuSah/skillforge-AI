@@ -3,13 +3,13 @@ from llama_cpp import Llama
 from huggingface_hub import hf_hub_download
 
 # ---------------- MODEL CONFIG ----------------
-REPO_ID = "TheBloke/TinyLlama-1.1B-Chat-GGUF"
-MODEL_FILE = "tinyllama-1.1b-chat.Q4_K_M.gguf"
+REPO_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+MODEL_FILE = "TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf"
 
 MODELS_DIR = "models"
 os.makedirs(MODELS_DIR, exist_ok=True)
 
-# ---------------- LOAD MODEL (RUNTIME DOWNLOAD) ----------------
+# ---------------- DOWNLOAD MODEL AT RUNTIME ----------------
 model_path = hf_hub_download(
     repo_id=REPO_ID,
     filename=MODEL_FILE,
@@ -17,6 +17,7 @@ model_path = hf_hub_download(
     local_dir_use_symlinks=False
 )
 
+# ---------------- LOAD LLM ----------------
 llm = Llama(
     model_path=model_path,
     n_ctx=2048,
@@ -41,7 +42,7 @@ def load_prompt(difficulty: str):
 
     return "You are a helpful AI tutor."
 
-# ---------------- MAIN GENERATOR ----------------
+# ---------------- MAIN GENERATION FUNCTION ----------------
 def generate_answer(context: str, user_query: str, difficulty: str, mode: str):
 
     system_prompt = load_prompt(difficulty)
