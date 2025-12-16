@@ -28,20 +28,6 @@ https://huggingface.co/spaces/rishusah/skillforge-ai
 - 🎨 Clean Streamlit UI
 - 💻 Works locally and on Hugging Face Spaces
 
----
-
-## 🧠 Architecture Overview
-
-1. User pastes study content
-2. Text is chunked into smaller segments
-3. Embeddings are generated using Sentence Transformers
-4. Embeddings stored in FAISS vector store
-5. Relevant chunks retrieved using similarity search
-6. Prompt dynamically constructed (difficulty + mode)
-7. Local LLM generates final answer
-
----
-
 ## 🛠️ Tech Stack
 
 - Frontend: Streamlit
