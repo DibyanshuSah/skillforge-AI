@@ -1,7 +1,7 @@
 import os
 import streamlit as st
+import requests
 
-from core.pdf_loader import load_pdf
 from core.chunker import chunk_text
 from core.embeddings import create_or_load_vectorstore
 from core.retriever import get_relevant_chunks
@@ -14,49 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- PATHS ----------------
-BASE_DIR = os.getcwd()
-DATA_DIR = os.path.join(BASE_DIR, "data")
-UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-PDF_PATH = os.path.join(UPLOAD_DIR, "uploaded.pdf")
-
-# ---------------- SIDEBAR ----------------
-st.sidebar.title("📄 Upload your study PDF")
-
-with st.sidebar.form("pdf_upload_form", clear_on_submit=False):
-
-    uploaded_file = st.file_uploader(
-        "Upload PDF",
-        type=["pdf"],
-        accept_multiple_files=False
-    )
-
-    upload_btn = st.form_submit_button("Upload PDF")
-
-    if upload_btn and uploaded_file is not None:
-        try:
-            with open(PDF_PATH, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            st.session_state["pdf_uploaded"] = True
-            st.success("PDF uploaded successfully")
-        except Exception as e:
-            st.error(f"Upload failed: {e}")
-            st.stop()
-
-difficulty = st.sidebar.radio(
-    "Difficulty",
-    ["Easy", "Medium", "Hard"],
-    index=1
-)
-
-mode = st.sidebar.radio(
-    "Mode",
-    ["Explain", "Summary", "MCQ", "Interview"]
-)
-
-# ---------------- MAIN UI ----------------
+# ---------------- UI ----------------
 st.markdown(
     """
     <h1>🔥 SkillForge AI</h1>
@@ -65,40 +23,84 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-query = st.text_input(
-    "Ask a question from your document",
+st.info(
+    "⚠️ PDF upload disabled on HF Free tier due to proxy limits. "
+    "Use **PDF URL** or **Paste Text** (production-safe approach)."
+)
+
+# ---------------- INPUT MODE ----------------
+mode_input = st.radio(
+    "Choose input method",
+    ["Paste Text", "PDF URL"]
+)
+
+raw_text = ""
+
+if mode_input == "Paste Text":
+    raw_text = st.text_area(
+        "Paste PDF text here",
+        height=300,
+        placeholder="Paste extracted PDF text here..."
+    )
+
+else:
+    pdf_url = st.text_input(
+        "Enter direct PDF URL (raw GitHub / Drive / HF Dataset)",
+        placeholder="https://example.com/file.pdf"
+    )
+
+    if st.button("Fetch PDF"):
+        if not pdf_url.strip():
+            st.error("Please enter a PDF URL")
+        else:
+            try:
+                resp = requests.get(pdf_url, timeout=20)
+                resp.raise_for_status()
+
+                with open("temp.pdf", "wb") as f:
+                    f.write(resp.content)
+
+                from core.pdf_loader import load_pdf
+                raw_text = load_pdf("temp.pdf")
+                st.success("PDF fetched & read successfully")
+
+            except Exception as e:
+                st.error(f"Failed to fetch PDF: {e}")
+
+# ---------------- SETTINGS ----------------
+difficulty = st.selectbox("Difficulty", ["Easy", "Medium", "Hard"], index=1)
+learn_mode = st.selectbox("Learning Mode", ["Explain", "Summary", "MCQ", "Interview"])
+
+question = st.text_input(
+    "Ask a question",
     placeholder="e.g. Explain this topic from basics"
 )
 
-# ---------------- GENERATE ANSWER ----------------
+# ---------------- GENERATE ----------------
 if st.button("Generate Answer"):
-
-    if not os.path.exists(PDF_PATH):
-        st.error("Please upload a PDF first.")
+    if not raw_text.strip():
+        st.error("No content provided")
         st.stop()
 
-    if not query.strip():
-        st.error("Please enter a question.")
+    if not question.strip():
+        st.error("Please enter a question")
         st.stop()
-
-    with st.spinner("Reading PDF..."):
-        text = load_pdf(PDF_PATH)
 
     with st.spinner("Chunking text..."):
-        chunks = chunk_text(text)
+        chunks = chunk_text(raw_text)
 
-    with st.spinner("Creating / loading vector store..."):
+    with st.spinner("Creating vector store..."):
         vectorstore = create_or_load_vectorstore(chunks)
 
-    with st.spinner("Retrieving relevant content..."):
-        context = get_relevant_chunks(vectorstore, query)
+    with st.spinner("Retrieving relevant context..."):
+        context = get_relevant_chunks(vectorstore, question)
 
     with st.spinner("Generating answer..."):
         answer = generate_answer(
             context=context,
-            user_query=query,
+            user_query=question,
             difficulty=difficulty,
-            mode=mode
+            mode=learn_mode
         )
 
     st.markdown("### ✅ Answer")
