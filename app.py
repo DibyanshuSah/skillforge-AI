@@ -1,18 +1,15 @@
 import streamlit as st
-
 from core.chunker import chunk_text
 from core.embeddings import create_or_load_vectorstore
 from core.retriever import get_relevant_chunks
 from core.generator import generate_answer
 
-# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
     page_title="SkillForge AI",
     page_icon="🔥",
     layout="wide"
 )
 
-# ---------------- CUSTOM CSS ----------------
 st.markdown("""
 <style>
 
@@ -61,40 +58,30 @@ h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- HEADER ----------------
 st.markdown('<div class="main-title">🔥 SkillForge AI</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">GenAI + RAG Adaptive Learning System</div>', unsafe_allow_html=True)
 
-# ---------------- LAYOUT ----------------
 left, right = st.columns([1.25, 1])
 
-# ================= LEFT =================
 with left:
-    st.markdown("### 📘 Learning Content")
+    st.markdown("### Learning Content")
 
     difficulty = st.segmented_control(
     "Difficulty Level",
     options=["Easy", "Medium", "Hard"],
     default="Medium"
     )
-
-
-
     mode = st.segmented_control(
     "Learning Mode",
     options=["Explain", "Summary", "MCQ", "Interview"],
     default="Explain"
     )
-
-
-
     context_text = st.text_area(
         "Paste your PDF / Notes text",
         height=260,
         placeholder="Paste your study material here..."
     )
 
-# ================= RIGHT =================
 with right:
     st.markdown("### 💬 Ask Question")
 
@@ -102,7 +89,6 @@ with right:
         "Your Question",
         placeholder="e.g. Explain this topic from basics"
     )
-
     if st.button("🚀 Generate Answer", use_container_width=True):
         if not context_text.strip():
             st.error("Please paste learning content.")
@@ -116,17 +102,15 @@ with right:
                     vectorstore,
                     user_query
                 )
-
                 answer = generate_answer(
                     relevant_context,
                     user_query,
                     difficulty,
                     mode
                 )
-
             st.markdown("### 🤖 AI Response")
             st.write(answer)
 
-# ---------------- FOOTER ----------------
+# FOOTER
 st.markdown("---")
-st.caption("Built with ❤️ using Streamlit, FAISS and Local Phi-3 (GGUF)")
+st.caption("Built by Dibyanshu")
