@@ -1,11 +1,5 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-
 def chunk_text(text):
-    """
-    Splits large text into smaller overlapping chunks for RAG.
-    """
-
     if not text or len(text.strip()) == 0:
         raise ValueError("Empty text received for chunking")
 

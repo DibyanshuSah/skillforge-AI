@@ -1,7 +1,5 @@
 FROM python:3.10-slim
-
 WORKDIR /app
-
 # System deps
 RUN apt-get update && apt-get install -y \
     git \
@@ -9,13 +7,10 @@ RUN apt-get update && apt-get install -y \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
 COPY requirements.txt .
-
-# Install python deps
+# Install python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy all project files
+# Copy all the files of the projects
 COPY . .
 
 EXPOSE 7860
