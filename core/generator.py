@@ -33,4 +33,5 @@ Answer:
         temperature=0.7,
         do_sample=True
     )
+
     return tokenizer.decode(outputs[0], skip_special_tokens=True)

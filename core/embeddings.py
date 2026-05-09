@@ -19,9 +19,12 @@ def create_or_load_vectorstore(chunks):
             allow_dangerous_deserialization=True
         )
         return vectorstore
+
     vectorstore = FAISS.from_texts(
         texts=chunks,
         embedding=embeddings
     )
+
     vectorstore.save_local(index_path)
+
     return vectorstore
