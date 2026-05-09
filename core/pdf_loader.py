@@ -10,8 +10,8 @@ def load_pdf(pdf_path: str) -> str:
         if text:
             pages_text.append(text)
 
-    final_text = "\n".join(pages_text)
-    if not final_text.strip():
+    final_Text = "\n".join(pages_text)
+    if not final_Text.strip():
         raise ValueError("No readable text found in pdf")
 
-    return final_text
+    return final_Text
